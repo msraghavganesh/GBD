@@ -39,7 +39,7 @@
       };
 
       // Iterate through rows (skipping header if necessary)
-      for (let i = 1; i < data.length; i++) {
+      for (let i = 1; i < data.length - 1; i++) {
         const row = data[i];
         const item = {
           id: parseInt(row[0]), // Assuming id is in the first column

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Excel to JSON Conversion</title>
+  <!-- Include SheetJS library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+</head>
+<body>
+  <input type="file" id="fileInput" accept=".xlsx, .xls" onchange="handleFile(event)">
+  <pre id="output"></pre>
+
+  <script>
+    function handleFile(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        const jsonOutput = formatToJson(jsonData);
+        document.getElementById('output').textContent = JSON.stringify(jsonOutput, null, 2);
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    function formatToJson(data) {
+  const json = {
+    data: [],
+    links: []
+  };
+
+  // Iterate through rows (skipping header if necessary)
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const item = {
+      id: parseInt(row[0]), // Assuming id is in the first column
+      start_date: excelDateToJSDate(row[2]), // Convert Excel date to "DD-MM-YYYY HH:mm"
+      text: row[1],          // Assuming text is in the second column
+      duration: parseInt(row[3]), // Assuming duration is in the fourth column
+      end_date: excelDateToJSDate(row[6]), // Convert Excel date to "DD-MM-YYYY HH:mm"
+      parent: row[4],        // Assuming parent is in the fifth column
+      type: row[5]           // Assuming type is in the sixth column
+    };
+
+    json.data.push(item);
+  }
+
+  return json;
+}
+
+function excelDateToJSDate(excelDate) {
+  // Excel stores dates as number of days since 1st Jan 1900 (for Windows) or 1st Jan 1904 (for Mac)
+  // Adjust this function based on your Excel date format and base date (1900 or 1904)
+  const excelBaseDate = new Date(1900, 0, 1); // Excel base date (1st Jan 1900)
+  const daysSinceExcelBase = excelDate - 1; // Excel date is 1-based, convert to 0-based
+  const jsDate = new Date(excelBaseDate.getTime() + daysSinceExcelBase * 24 * 60 * 60 * 1000);
+  
+  // Format date as "DD-MM-YYYY HH:mm"
+  const formattedDate = `${pad(jsDate.getDate())}-${pad(jsDate.getMonth() + 1)}-${jsDate.getFullYear()} ${pad(jsDate.getHours())}:${pad(jsDate.getMinutes())}`;
+  
+  return formattedDate;
+}
+
+function pad(number) {
+  if (number < 10) {
+    return '0' + number;
+  }
+  return number;
+}
+
+  </script>
+</body>
+</html>
